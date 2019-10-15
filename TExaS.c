@@ -4,7 +4,6 @@
 // PLL turned on at 80 MHz
 // Implements Logic Analyzer on Port B, D, or E
 //
-
 // Jonathan Valvano. Daniel Valvano
 // August 29, 2018
 
@@ -24,11 +23,7 @@
  http://users.ece.utexas.edu/~valvano/
  */
 
-
-
 // Timer5A periodic interrupt implements logic analyzer
-
-
 void PLL_Init(void);
 
 void UART0_Init(void);
@@ -83,6 +78,7 @@ volatile unsigned long *PortDataAddr; // pointer to data
 #define GPIO_PORTF_DATA_R       (*((volatile unsigned long *)0x400253FC))
 #define GPIO_PORTD_DATA_R       (*((volatile unsigned long *)0x400073FC))
 
+
 void (*sendDataPt)(void);
 
 // ************TExaS_Init*****************
@@ -95,7 +91,25 @@ void (*sendDataPt)(void);
 void TExaS_Init(void(*task)(void)){
   PLL_Init();     // PLL on at 80 MHz
 	sendDataPt = task;
-
+ /* if(port==0){
+    SYSCTL_RCGCGPIO_R |= 1;   // Port A
+    PortDataAddr = ((volatile unsigned long *)0x400043FC); // GPIO_PORTA_DATA_R
+  }else if(port==1){
+    SYSCTL_RCGCGPIO_R |= 2;   // Port B
+    PortDataAddr = ((volatile unsigned long *)0x400053FC); // GPIO_PORTB_DATA_R
+  }else if(port==3){
+    SYSCTL_RCGCGPIO_R |= 8;   // Port D
+    PortDataAddr = ((volatile unsigned long *)0x400073FC); //GPIO_PORTD_DATA_R
+  }else if(port==4){
+    SYSCTL_RCGCGPIO_R |= 0x10;   // Port E
+    PortDataAddr = ((volatile unsigned long *)0x400243FC); //GPIO_PORTE_DATA_R
+  }else if(port==5){
+    SYSCTL_RCGCGPIO_R |= 0x20;   // Port F
+    PortDataAddr = ((volatile unsigned long *)0x400253FC); // GPIO_PORTF_DATA_R
+  }else{
+    return; // bad input
+  }
+  */
   SYSCTL_RCGCTIMER_R |= 0x20;      // 0) activate timer5
   UART0_Init();                    // UART0 is connected to TExaSdisplay
   TIMER5_CTL_R = 0x00000000;       // 1) disable timer5A during setup
@@ -117,7 +131,8 @@ void TExaS_Init(void(*task)(void)){
 // Sends 7-bit data to PC running TExaSdisplay via the USB cable
 void Timer5A_Handler(void){
   TIMER5_ICR_R = 0x00000001;         // acknowledge timer5A timeout
-	(*sendDataPt)();
+ (*sendDataPt)();
+//  UART0_DR_R = (*PortDataAddr)|0x80; // send digital data to TExaSdisplay
 }
 
 
